@@ -7,7 +7,12 @@ const itemCategories = ['plastic pertanian', 'plastic kemasan', 'sembako', 'baha
 // --- Komponen Keypad (Diperbesar dan Full-Width) ---
 const Keypad = ({ onNumberClick, onClear }) => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', width: '100%', margin: '15px auto 0' }}>
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(num => (
+        {[
+            1, 2, 3, 
+            4, 5, 6, 
+            7, 8, 9, 
+            0 // Tombol 0 ada di baris terakhir dan akan menempati 2 kolom
+        ].map(num => (
             <button 
                 key={num} 
                 onClick={() => onNumberClick(num)} 
@@ -17,15 +22,20 @@ const Keypad = ({ onNumberClick, onClear }) => (
                     backgroundColor: '#333', 
                     color: 'var(--color-text-light)', 
                     borderRadius: '8px',
-                    // Memastikan tombol Keypad memiliki tinggi yang memadai untuk sentuhan
-                    height: 'auto' 
+                    height: 'auto',
+                    // Logic pemusatan tombol '0' di baris terakhir dengan span 2 kolom
+                    gridColumn: num === 0 ? '1 / span 3' : 'auto', 
                 }}
             >
                 {num}
             </button>
         ))}
+        {/* Tambahkan elemen kosong untuk melengkapi baris jika tombol '0' hanya span 2 */}
+        <div style={{ visibility: 'hidden', height: '0px' }}></div> 
+
+        {/* Tombol CLEAR menggunakan span 3 kolom di baris paling bawah */}
         <button onClick={onClear} style={{ gridColumn: 'span 3', padding: '20px', backgroundColor: 'var(--color-danger)', fontSize: '24px', borderRadius: '8px' }}>
-            CLEAR (C)
+           HAPUS
         </button>
     </div>
 );
@@ -42,6 +52,7 @@ function CetakBarcodePage() {
     // State untuk memicu rendering barcode di area tersembunyi
     const [barcodeResult, setBarcodeResult] = useState(''); 
     const [itemDetail, setItemDetail] = useState(null); 
+    const [beratKg, setBeratKg] = useState(''); // State untuk menyimpan berat dalam format KG
 
     // Ref untuk elemen SVG di dalam area cetak tersembunyi
     const barcodeRef = useRef(null); 
@@ -50,6 +61,7 @@ function CetakBarcodePage() {
     useEffect(() => {
         const fetchItems = async () => {
             try {
+                // Ganti dengan endpoint API Anda yang sebenarnya
                 const response = await axios.get('/api/items'); 
                 setItems(response.data);
             } catch (error) {
@@ -64,6 +76,7 @@ function CetakBarcodePage() {
         const filtered = items.filter(item => item.jenis === activeCategory);
         setFilteredItems(filtered);
         setBeratInput('');
+        setBeratKg('');
 
         if (filtered.length > 0) {
             setSelectedItem(filtered[0]._id); 
@@ -103,12 +116,22 @@ function CetakBarcodePage() {
     // --- Handler Keypad ---
     const handleKeypadInput = (num) => {
         if (beratInput.length < 6) { 
-            setBeratInput(prev => String(prev) + String(num));
+            const newBerat = String(beratInput) + String(num);
+            setBeratInput(newBerat);
+            
+            // Konversi ke KG dengan 2 digit desimal (misal: 250 -> 0.25)
+            const beratGram = parseInt(newBerat);
+            if (!isNaN(beratGram) && beratGram > 0) {
+                setBeratKg((beratGram / 1000).toFixed(2) + " KG"); 
+            } else {
+                setBeratKg("");
+            }
         }
     };
     
     const handleClear = () => {
         setBeratInput('');
+        setBeratKg('');
     };
 
     const handleItemSelect = (item) => {
@@ -116,42 +139,92 @@ function CetakBarcodePage() {
         setItemDetail(item);
     };
 
-    // --- Fungsi Pencetakan DOM (Mengambil dari ID 'print-content-wrapper') ---
+    // --- Fungsi Pencetakan DOM (Perbaikan CSS Paling Stabil) ---
     const printLabel = () => {
-        // Ambil konten dari elemen tersembunyi yang sudah memiliki SVG yang ter-render
         const printContent = document.getElementById('print-content-wrapper').innerHTML;
         
         const styles = `
             <style>
-                @page { size: 50mm 35mm; margin: 0; }
-                body { margin: 0; padding: 0; background: white; color: black; }
+                @page { 
+                    size: 50mm 35mm; 
+                    margin: auto; 
+                }
+                body { 
+                    margin: 0; 
+                    padding: 0; 
+                    background: white; 
+                    color: black;
+                }
                 
+                /* KUNCI STABILITAS: Pemusatan Absolut dan Ukuran Paksa */
                 #print-content-wrapper { 
                     width: 50mm; 
                     height: 35mm; 
+                    box-sizing: border-box; 
+                    padding: 2mm; 
+                    margin: 0; 
+                    
+                    /* Pemusatan Absolut 2D yang Andap */
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%); 
+                    
+                    text-align: center;
+                    font-family: Arial, sans-serif;
+                    
+                    /* Mengatur layout konten internal */
                     display: flex; 
                     flex-direction: column; 
                     justify-content: space-between;
                     align-items: center; 
-                    text-align: center; 
-                    font-family: Arial, sans-serif; 
-                    padding: 2mm 1mm; 
                 }
-                .item-info { font-size: 9px; font-weight: bold; margin: 0; padding: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%;}
-                .barcode-text { font-size: 11px; font-weight: bold; margin: 0; padding: 0; }
-                svg { max-width: 48mm; height: auto; margin: 0 auto; display: block; } 
+
+                /* Gaya Konten Internal */
+                .item-info { 
+                    font-size: 9px; 
+                    font-weight: bold; 
+                    margin: 0; 
+                    padding: 0; 
+                    width: 100%;
+                    text-align: center; 
+                }
+                .berat-info {
+                    font-size: 9px;
+                    margin: 0; 
+                    padding: 0;
+                    width: 100%;
+                    text-align: center; 
+                }
+
+                /* Teks Barcode di Tengah */
+                .barcode-text { 
+                    font-size: 11px; 
+                    font-weight: bold; 
+                    margin-top: 2px; 
+                    padding: 0; 
+                    width: 100%; 
+                    display: block;
+                    text-align: center; 
+                }
+                
+                /* Gaya SVG Barcode (Ukuran Tetap untuk Stabilitas) */
+                svg { 
+                    width: 45mm !important; 
+                    height: 15mm !important; 
+                    margin: 1mm auto; 
+                    display: block; 
+                } 
             </style>
         `;
 
         const newWindow = window.open('', '_blank');
         
-        // Memastikan dokumen siap untuk ditulis, mengatasi about:blank
         newWindow.document.open(); 
         newWindow.document.write('<html><head>' + styles + '</head><body>' + printContent + '</body></html>');
         newWindow.document.close(); 
 
         newWindow.onload = () => {
-            // Memberikan waktu fokus dan memanggil print
             setTimeout(() => {
                 newWindow.focus(); 
                 newWindow.print();
@@ -175,7 +248,7 @@ function CetakBarcodePage() {
         }
 
         try {
-            // 1. Panggil API Backend
+            // 1. Panggil API Backend (Sesuaikan dengan endpoint Anda)
             const response = await axios.post('/api/barcode', {
                 kode_item: currentItem.kode,
                 berat: berat
@@ -186,7 +259,7 @@ function CetakBarcodePage() {
             // 2. ATUR STATE BARCODE. Ini akan memicu useEffect untuk merender SVG dan mencetak.
             setItemDetail(currentItem);
             setBarcodeResult(finalBarcodeString); 
-
+            
         } catch (error) {
             alert('Gagal mencetak barcode. Cek konsol.');
             console.error('Error generating barcode:', error.response ? error.response.data : error.message);
@@ -204,7 +277,7 @@ function CetakBarcodePage() {
                         key={cat} 
                         onClick={() => setActiveCategory(cat)} 
                         style={{ 
-                            padding: '12px 20px', 
+                            padding: '12px 20px',
                             border: cat === activeCategory ? `2px solid var(--color-primary-blue)` : '1px solid #444',
                             backgroundColor: cat === activeCategory ? '#333' : 'var(--color-card-bg)',
                             color: cat === activeCategory ? 'var(--color-primary-blue)' : 'var(--color-text-light)',
@@ -220,11 +293,12 @@ function CetakBarcodePage() {
             {/* KONTEN UTAMA DENGAN GRID FULL-WIDTH */}
             <div style={{ 
                 display: 'grid', 
-                // Menggunakan lebar penuh layar
                 gridTemplateColumns: '1.2fr 1fr', 
-                gap: '30px', 
+                gap: '50px', 
                 alignItems: 'start', 
-                width: '100%' 
+                width: '100%',
+                maxWidth: '1200px', 
+                margin: '0 auto' 
             }}> 
                 
                 {/* Kolom 1: Pilihan Item (GRID KOTAK) */}
@@ -241,7 +315,6 @@ function CetakBarcodePage() {
                         display: 'grid', 
                         gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
                         gap: '12px', 
-                        // Tinggi adaptif agar Keypad tetap terlihat
                         maxHeight: 'calc(100vh - 350px)', 
                         overflowY: 'auto', 
                         paddingRight: '10px' 
@@ -291,6 +364,12 @@ function CetakBarcodePage() {
                         style={{ width: '100%', padding: '25px', textAlign: 'center', fontSize: '36px', fontWeight: 'bold', marginBottom: '20px', borderRadius: '8px' }}
                     />
                     
+                    {beratKg && (
+                        <p style={{ fontSize: '1.2em', color: 'var(--color-success)', fontWeight: 'bold', marginBottom: '15px' }}>
+                            Format KG: {beratKg}
+                        </p>
+                    )}
+                    
                     <Keypad onNumberClick={handleKeypadInput} onClear={handleClear} />
 
                     <button 
@@ -308,7 +387,9 @@ function CetakBarcodePage() {
                 {barcodeResult && itemDetail && (
                     <div id="print-content-wrapper">
                         <p className="item-info">{itemDetail.nama.toUpperCase()}</p>
-                        {/* SVG yang diisi JsBarcode (menggunakan ref untuk JsBarcode) */}
+                        
+                        {beratKg && <p className="berat-info">Berat: {beratKg}</p>}
+                        
                         <svg ref={barcodeRef} style={{ width: '100%' }}></svg> 
                         <p className="barcode-text">**{barcodeResult}**</p>
                     </div>
