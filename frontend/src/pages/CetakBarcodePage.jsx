@@ -4,26 +4,25 @@ import JsBarcode from 'jsbarcode';
 
 const itemCategories = ['plastic pertanian', 'plastic kemasan', 'sembako', 'bahan kue'];
 
-// --- Komponen Keypad (Diperbesar dan Full-Width) ---
+// --- Komponen Keypad (Padding & Font Dikurangi) ---
 const Keypad = ({ onNumberClick, onClear }) => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', width: '100%', margin: '15px auto 0' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', width: '100%', margin: '10px auto 0' }}>
         {[
             1, 2, 3, 
             4, 5, 6, 
             7, 8, 9, 
-            0 // Tombol 0 ada di baris terakhir dan akan menempati 2 kolom
+            0 
         ].map(num => (
             <button 
                 key={num} 
                 onClick={() => onNumberClick(num)} 
                 style={{ 
-                    padding: '25px', 
-                    fontSize: '30px', 
+                    padding: '18px', // Padding tombol dikurangi
+                    fontSize: '22px', // Ukuran font tombol dikurangi
                     backgroundColor: '#333', 
                     color: 'var(--color-text-light)', 
-                    borderRadius: '8px',
+                    borderRadius: '6px',
                     height: 'auto',
-                    // Logic pemusatan tombol '0' di baris terakhir dengan span 2 kolom
                     gridColumn: num === 0 ? '1 / span 3' : 'auto', 
                 }}
             >
@@ -34,8 +33,8 @@ const Keypad = ({ onNumberClick, onClear }) => (
         <div style={{ visibility: 'hidden', height: '0px' }}></div> 
 
         {/* Tombol CLEAR menggunakan span 3 kolom di baris paling bawah */}
-        <button onClick={onClear} style={{ gridColumn: 'span 3', padding: '20px', backgroundColor: 'var(--color-danger)', fontSize: '24px', borderRadius: '8px' }}>
-           HAPUS
+        <button onClick={onClear} style={{ gridColumn: 'span 3', padding: '15px', backgroundColor: 'var(--color-danger)', fontSize: '18px', borderRadius: '6px' }}>
+          HAPUS
         </button>
     </div>
 );
@@ -49,19 +48,16 @@ function CetakBarcodePage() {
     const [selectedItem, setSelectedItem] = useState(''); 
     const [beratInput, setBeratInput] = useState(''); 
     
-    // State untuk memicu rendering barcode di area tersembunyi
     const [barcodeResult, setBarcodeResult] = useState(''); 
     const [itemDetail, setItemDetail] = useState(null); 
-    const [beratKg, setBeratKg] = useState(''); // State untuk menyimpan berat dalam format KG
+    const [beratKg, setBeratKg] = useState(''); 
 
-    // Ref untuk elemen SVG di dalam area cetak tersembunyi
     const barcodeRef = useRef(null); 
 
     // --- Efek untuk mengambil data item ---
     useEffect(() => {
         const fetchItems = async () => {
             try {
-                // Ganti dengan endpoint API Anda yang sebenarnya
                 const response = await axios.get('/api/items'); 
                 setItems(response.data);
             } catch (error) {
@@ -88,11 +84,10 @@ function CetakBarcodePage() {
         setBarcodeResult('');
     }, [activeCategory, items]);
     
-    // --- Efek BARCODE RENDERING dan CETAK (Kunci Stabilitas) ---
+    // --- Efek BARCODE RENDERING dan CETAK ---
     useEffect(() => {
         if (barcodeRef.current && barcodeResult && itemDetail) {
             try {
-                // 1. Gambar Barcode menggunakan JsBarcode ke Ref (di DOM utama yang tersembunyi)
                 JsBarcode(barcodeRef.current, barcodeResult, {
                     format: "CODE128", 
                     displayValue: false,
@@ -101,9 +96,8 @@ function CetakBarcodePage() {
                     height: 40,
                 });
 
-                // 2. Tunggu sebentar agar browser selesai menggambar SVG di DOM utama
                 setTimeout(() => {
-                    printLabel(); // Panggil fungsi cetak
+                    printLabel(); 
                 }, 100); 
 
             } catch (e) {
@@ -119,7 +113,6 @@ function CetakBarcodePage() {
             const newBerat = String(beratInput) + String(num);
             setBeratInput(newBerat);
             
-            // Konversi ke KG dengan 2 digit desimal (misal: 250 -> 0.25)
             const beratGram = parseInt(newBerat);
             if (!isNaN(beratGram) && beratGram > 0) {
                 setBeratKg((beratGram / 1000).toFixed(2) + " KG"); 
@@ -139,7 +132,7 @@ function CetakBarcodePage() {
         setItemDetail(item);
     };
 
-    // --- Fungsi Pencetakan DOM (Perbaikan CSS Paling Stabil) ---
+    // --- Fungsi Pencetakan DOM ---
     const printLabel = () => {
         const printContent = document.getElementById('print-content-wrapper').innerHTML;
         
@@ -156,7 +149,6 @@ function CetakBarcodePage() {
                     color: black;
                 }
                 
-                /* KUNCI STABILITAS: Pemusatan Absolut dan Ukuran Paksa */
                 #print-content-wrapper { 
                     width: 50mm; 
                     height: 35mm; 
@@ -164,7 +156,6 @@ function CetakBarcodePage() {
                     padding: 2mm; 
                     margin: 0; 
                     
-                    /* Pemusatan Absolut 2D yang Andap */
                     position: absolute;
                     top: 50%;
                     left: 50%;
@@ -173,42 +164,16 @@ function CetakBarcodePage() {
                     text-align: center;
                     font-family: Arial, sans-serif;
                     
-                    /* Mengatur layout konten internal */
                     display: flex; 
                     flex-direction: column; 
                     justify-content: space-between;
                     align-items: center; 
                 }
 
-                /* Gaya Konten Internal */
-                .item-info { 
-                    font-size: 9px; 
-                    font-weight: bold; 
-                    margin: 0; 
-                    padding: 0; 
-                    width: 100%;
-                    text-align: center; 
-                }
-                .berat-info {
-                    font-size: 9px;
-                    margin: 0; 
-                    padding: 0;
-                    width: 100%;
-                    text-align: center; 
-                }
-
-                /* Teks Barcode di Tengah */
-                .barcode-text { 
-                    font-size: 11px; 
-                    font-weight: bold; 
-                    margin-top: 2px; 
-                    padding: 0; 
-                    width: 100%; 
-                    display: block;
-                    text-align: center; 
-                }
+                .item-info { font-size: 9px; font-weight: bold; margin: 0; padding: 0; width: 100%; text-align: center; }
+                .berat-info { font-size: 9px; margin: 0; padding: 0; width: 100%; text-align: center; }
+                .barcode-text { font-size: 11px; font-weight: bold; margin-top: 2px; padding: 0; width: 100%; display: block; text-align: center; }
                 
-                /* Gaya SVG Barcode (Ukuran Tetap untuk Stabilitas) */
                 svg { 
                     width: 45mm !important; 
                     height: 15mm !important; 
@@ -248,7 +213,6 @@ function CetakBarcodePage() {
         }
 
         try {
-            // 1. Panggil API Backend (Sesuaikan dengan endpoint Anda)
             const response = await axios.post('/api/barcode', {
                 kode_item: currentItem.kode,
                 berat: berat
@@ -256,7 +220,6 @@ function CetakBarcodePage() {
             
             const finalBarcodeString = response.data.barcode;
             
-            // 2. ATUR STATE BARCODE. Ini akan memicu useEffect untuk merender SVG dan mencetak.
             setItemDetail(currentItem);
             setBarcodeResult(finalBarcodeString); 
             
@@ -290,21 +253,21 @@ function CetakBarcodePage() {
                 ))}
             </div>
 
-            {/* KONTEN UTAMA DENGAN GRID FULL-WIDTH */}
+            {/* KONTEN UTAMA DENGAN GRID RAMPING */}
             <div style={{ 
                 display: 'grid', 
-                gridTemplateColumns: '1.2fr 1fr', 
-                gap: '50px', 
+                gridTemplateColumns: '1.5fr 0.8fr', 
+                gap: '30px', 
                 alignItems: 'start', 
                 width: '100%',
                 maxWidth: '1200px', 
                 margin: '0 auto' 
             }}> 
                 
-                {/* Kolom 1: Pilihan Item (GRID KOTAK) */}
+                {/* Kolom 1: Pilihan Item (Lebar 1.5fr) */}
                 <div style={{ 
                     backgroundColor: 'var(--color-card-bg)', 
-                    padding: '25px', 
+                    padding: '20px', 
                     borderRadius: '8px', 
                     boxShadow: '0 4px 15px rgba(0, 0, 0, 0.5)'
                 }}>
@@ -349,9 +312,17 @@ function CetakBarcodePage() {
                     </div>
                 </div>
 
-                {/* Kolom 2: Input Berat, Keypad, dan Tombol Cetak (Fokus Utama) */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: 'var(--color-card-bg)', padding: '30px', borderRadius: '8px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.5)' }}>
-                    <label htmlFor="berat-input" style={{ marginBottom: '20px', color: 'var(--color-primary-blue)', fontWeight: 'bold', fontSize: '1.2em' }}>
+                {/* Kolom 2: Input Berat, Keypad, dan Tombol Cetak (Ramping 0.8fr) */}
+                <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    backgroundColor: 'var(--color-card-bg)', 
+                    padding: '20px', // Padding kontainer dikurangi
+                    borderRadius: '8px', 
+                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.5)' 
+                }}>
+                    <label htmlFor="berat-input" style={{ marginBottom: '15px', color: 'var(--color-primary-blue)', fontWeight: 'bold', fontSize: '1.1em' }}>
                         2. INPUT BERAT & CETAK
                     </label>
                     <input 
@@ -361,11 +332,19 @@ function CetakBarcodePage() {
                         readOnly 
                         maxLength="6" 
                         placeholder="000000"
-                        style={{ width: '100%', padding: '25px', textAlign: 'center', fontSize: '36px', fontWeight: 'bold', marginBottom: '20px', borderRadius: '8px' }}
+                        style={{ 
+                            width: '100%', 
+                            padding: '18px', // Padding Input dikurangi
+                            fontSize: '32px', // Ukuran font Input dikurangi
+                            textAlign: 'center', 
+                            fontWeight: 'bold', 
+                            marginBottom: '15px', 
+                            borderRadius: '8px' 
+                        }}
                     />
                     
                     {beratKg && (
-                        <p style={{ fontSize: '1.2em', color: 'var(--color-success)', fontWeight: 'bold', marginBottom: '15px' }}>
+                        <p style={{ fontSize: '1.1em', color: 'var(--color-success)', fontWeight: 'bold', marginBottom: '10px' }}>
                             Format KG: {beratKg}
                         </p>
                     )}
@@ -375,7 +354,7 @@ function CetakBarcodePage() {
                     <button 
                         onClick={handleCetak} 
                         disabled={!selectedItem || beratInput.length === 0}
-                        style={{ padding: '20px 30px', backgroundColor: 'var(--color-success)', marginTop: '40px', width: '100%', fontSize: '1.5em', borderRadius: '8px' }}
+                        style={{ padding: '15px 30px', backgroundColor: 'var(--color-success)', marginTop: '25px', width: '100%', fontSize: '1.3em', borderRadius: '8px' }}
                     >
                         CETAK LABEL
                     </button>
@@ -391,7 +370,7 @@ function CetakBarcodePage() {
                         {beratKg && <p className="berat-info">Berat: {beratKg}</p>}
                         
                         <svg ref={barcodeRef} style={{ width: '100%' }}></svg> 
-                        <p className="barcode-text">**{barcodeResult}**</p>
+                        <p className="barcode-text">{barcodeResult}</p>
                     </div>
                 )}
             </div>
