@@ -1,0 +1,103 @@
+/* frontend/src/index.css */
+
+:root {
+  /* Warna Dasar Futuristik */
+  --color-dark-bg: #121212;
+  --color-card-bg: #1e1e1e;
+  --color-primary-blue: #00bcd4; /* Cyan/Biru Cerah untuk Aksen */
+  --color-text-light: #e0e0e0;
+  --color-text-dim: #9e9e9e;
+  --color-success: #4caf50;
+  --color-danger: #f44336;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--color-dark-bg);
+  color: var(--color-text-light);
+  min-height: 100vh;
+}
+
+/* Container utama di App.jsx */
+#root, .app-container {
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+h1, h2, h3, h4 {
+  color: var(--color-primary-blue);
+  margin-top: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-card-bg);
+}
+
+/* Gaya Input/Select */
+input[type="text"], input[type="number"], select, button {
+  padding: 12px;
+  border: 1px solid var(--color-text-dim);
+  border-radius: 4px;
+  background-color: var(--color-card-bg);
+  color: var(--color-text-light);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+input:focus, select:focus {
+  border-color: var(--color-primary-blue);
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 188, 212, 0.5);
+}
+
+/* Gaya Tombol */
+button {
+  cursor: pointer;
+  font-weight: bold;
+  background-color: var(--color-primary-blue);
+  color: var(--color-dark-bg);
+  border: none;
+}
+
+button:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+button:disabled {
+  background-color: var(--color-text-dim);
+  cursor: not-allowed;
+}
+
+/* Gaya Tabel */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+th, td {
+    padding: 12px 15px;
+    border: 1px solid var(--color-card-bg);
+    text-align: left;
+}
+th {
+    background-color: #2a2a2a;
+    color: var(--color-primary-blue);
+}
+tr:nth-child(even) {
+    background-color: #1a1a1a;
+}
+tr:hover {
+    background-color: #252525;
+}
+
+/* Gaya Link/Navigasi */
+.nav-link {
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.nav-link:hover {
+    background-color: var(--color-card-bg);
+}
