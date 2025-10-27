@@ -354,7 +354,7 @@ function CetakBarcodePage() {
                     <button 
                         onClick={handleCetak} 
                         disabled={!selectedItem || beratInput.length === 0}
-                        style={{ padding: '15px 30px', backgroundColor: 'var(--color-success)', marginTop: '25px', width: '100%', fontSize: '1.3em', borderRadius: '8px' }}
+                        style={{ padding: '15px 30px', backgroundColor: 'var(--color-success)', marginTop: '10px', width: '100%', fontSize: '1.3em', borderRadius: '8px' }}
                     >
                         CETAK LABEL
                     </button>
