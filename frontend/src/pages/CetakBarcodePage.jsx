@@ -4,7 +4,7 @@ import JsBarcode from 'jsbarcode';
 
 const itemCategories = ['plastic pertanian', 'plastic kemasan', 'sembako', 'bahan kue'];
 
-// --- Komponen Keypad (Padding & Font Dikurangi) ---
+// --- Komponen Keypad (Diperbesar dan Full-Width) ---
 const Keypad = ({ onNumberClick, onClear }) => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', width: '100%', margin: '10px auto 0' }}>
         {[
@@ -17,8 +17,8 @@ const Keypad = ({ onNumberClick, onClear }) => (
                 key={num} 
                 onClick={() => onNumberClick(num)} 
                 style={{ 
-                    padding: '18px', // Padding tombol dikurangi
-                    fontSize: '22px', // Ukuran font tombol dikurangi
+                    padding: '18px', 
+                    fontSize: '22px', 
                     backgroundColor: '#333', 
                     color: 'var(--color-text-light)', 
                     borderRadius: '6px',
@@ -34,7 +34,7 @@ const Keypad = ({ onNumberClick, onClear }) => (
 
         {/* Tombol CLEAR menggunakan span 3 kolom di baris paling bawah */}
         <button onClick={onClear} style={{ gridColumn: 'span 3', padding: '15px', backgroundColor: 'var(--color-danger)', fontSize: '18px', borderRadius: '6px' }}>
-          HAPUS
+            HAPUS
         </button>
     </div>
 );
@@ -48,10 +48,12 @@ function CetakBarcodePage() {
     const [selectedItem, setSelectedItem] = useState(''); 
     const [beratInput, setBeratInput] = useState(''); 
     
+    // State untuk memicu rendering barcode di area tersembunyi
     const [barcodeResult, setBarcodeResult] = useState(''); 
     const [itemDetail, setItemDetail] = useState(null); 
-    const [beratKg, setBeratKg] = useState(''); 
+    const [beratKg, setBeratKg] = useState(''); // State untuk menyimpan berat dalam format KG
 
+    // Ref untuk elemen SVG di dalam area cetak tersembunyi
     const barcodeRef = useRef(null); 
 
     // --- Efek untuk mengambil data item ---
@@ -84,18 +86,20 @@ function CetakBarcodePage() {
         setBarcodeResult('');
     }, [activeCategory, items]);
     
-    // --- Efek BARCODE RENDERING dan CETAK ---
+    // --- Efek BARCODE RENDERING dan CETAK (Kunci Stabilitas) ---
     useEffect(() => {
         if (barcodeRef.current && barcodeResult && itemDetail) {
             try {
+                // Ukuran disesuaikan untuk mempermudah scan
                 JsBarcode(barcodeRef.current, barcodeResult, {
                     format: "CODE128", 
                     displayValue: false,
-                    margin: 2,
-                    width: 1.5,
-                    height: 40,
+                    margin: 1, 
+                    width: 1.2, 
+                    height: 35, 
                 });
 
+                // Tunggu sebentar agar browser selesai menggambar SVG di DOM utama
                 setTimeout(() => {
                     printLabel(); 
                 }, 100); 
@@ -113,6 +117,7 @@ function CetakBarcodePage() {
             const newBerat = String(beratInput) + String(num);
             setBeratInput(newBerat);
             
+            // Konversi ke KG dengan 2 digit desimal
             const beratGram = parseInt(newBerat);
             if (!isNaN(beratGram) && beratGram > 0) {
                 setBeratKg((beratGram / 1000).toFixed(2) + " KG"); 
@@ -130,9 +135,13 @@ function CetakBarcodePage() {
     const handleItemSelect = (item) => {
         setSelectedItem(item._id);
         setItemDetail(item);
+        // FIX BUG: Reset state cetak ketika item baru dipilih
+        setBarcodeResult(''); 
+        setBeratInput('');    
+        setBeratKg('');       
     };
 
-    // --- Fungsi Pencetakan DOM ---
+    // --- Fungsi Pencetakan DOM (Perbaikan CSS Pemusatan Paling Stabil) ---
     const printLabel = () => {
         const printContent = document.getElementById('print-content-wrapper').innerHTML;
         
@@ -149,6 +158,7 @@ function CetakBarcodePage() {
                     color: black;
                 }
                 
+                /* KUNCI STABILITAS: Pemusatan Absolut dan Ukuran Paksa */
                 #print-content-wrapper { 
                     width: 50mm; 
                     height: 35mm; 
@@ -170,10 +180,37 @@ function CetakBarcodePage() {
                     align-items: center; 
                 }
 
-                .item-info { font-size: 9px; font-weight: bold; margin: 0; padding: 0; width: 100%; text-align: center; }
-                .berat-info { font-size: 9px; margin: 0; padding: 0; width: 100%; text-align: center; }
-                .barcode-text { font-size: 11px; font-weight: bold; margin-top: 2px; padding: 0; width: 100%; display: block; text-align: center; }
+                /* Gaya Konten Internal */
+                .item-info { 
+                    font-size: 9px; 
+                    font-weight: bold; 
+                    margin: 0; 
+                    padding: 0; 
+                    width: 100%;
+                    text-align: center; 
+                    display: block; /* Memastikan pemusatan block bekerja */
+                }
+                .berat-info {
+                    font-size: 9px;
+                    margin: 0; 
+                    padding: 0;
+                    width: 100%;
+                    text-align: center; 
+                    display: block;
+                }
+
+                /* Teks Barcode di Tengah */
+                .barcode-text { 
+                    font-size: 11px; 
+                    font-weight: bold; 
+                    margin-top: 2px; 
+                    padding: 0; 
+                    width: 100%; 
+                    display: block;
+                    text-align: center; 
+                }
                 
+                /* Gaya SVG Barcode (Ukuran Tetap untuk Stabilitas) */
                 svg { 
                     width: 45mm !important; 
                     height: 15mm !important; 
@@ -231,7 +268,7 @@ function CetakBarcodePage() {
 
     return (
         <div className="cetak-barcode-container" style={{ width: '100%', maxWidth: '100%', margin: '0 auto' }}>
-            
+           
 
             {/* SUB MENU KATEGORI */}
             <div style={{ marginBottom: '30px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
@@ -318,13 +355,11 @@ function CetakBarcodePage() {
                     flexDirection: 'column', 
                     alignItems: 'center', 
                     backgroundColor: 'var(--color-card-bg)', 
-                    padding: '20px', // Padding kontainer dikurangi
+                    padding: '20px', 
                     borderRadius: '8px', 
                     boxShadow: '0 4px 15px rgba(0, 0, 0, 0.5)' 
                 }}>
-                    <label htmlFor="berat-input" style={{ marginBottom: '15px', color: 'var(--color-primary-blue)', fontWeight: 'bold', fontSize: '1.1em' }}>
-                        2. INPUT BERAT & CETAK
-                    </label>
+                    
                     <input 
                         id="berat-input"
                         type="text" 
@@ -334,8 +369,8 @@ function CetakBarcodePage() {
                         placeholder="000000"
                         style={{ 
                             width: '100%', 
-                            padding: '18px', // Padding Input dikurangi
-                            fontSize: '32px', // Ukuran font Input dikurangi
+                            padding: '18px', 
+                            fontSize: '32px', 
                             textAlign: 'center', 
                             fontWeight: 'bold', 
                             marginBottom: '15px', 
@@ -354,7 +389,7 @@ function CetakBarcodePage() {
                     <button 
                         onClick={handleCetak} 
                         disabled={!selectedItem || beratInput.length === 0}
-                        style={{ padding: '15px 30px', backgroundColor: 'var(--color-success)', marginTop: '10px', width: '100%', fontSize: '1.3em', borderRadius: '8px' }}
+                        style={{ padding: '15px 30px', backgroundColor: 'var(--color-success)', marginTop: '7px', width: '100%', fontSize: '1.3em', borderRadius: '8px' }}
                     >
                         CETAK LABEL
                     </button>
