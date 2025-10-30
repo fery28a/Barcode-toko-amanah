@@ -163,7 +163,7 @@ function CetakBarcodePage() {
                     width: 50mm; 
                     height: 35mm; 
                     box-sizing: border-box; 
-                    padding: 1.5mm; 
+                    padding: 2mm 1.5mm 1.5mm 1.5mm; 
                     margin: 0; 
                     
                     position: absolute;
@@ -176,7 +176,7 @@ function CetakBarcodePage() {
                     
                     display: flex; 
                     flex-direction: column; 
-                    justify-content: space-between;
+                    justify-content: flex-start;
                     align-items: center; 
                 }
 
@@ -184,7 +184,7 @@ function CetakBarcodePage() {
                 .item-info { 
                     font-size: 9px; 
                     font-weight: bold; 
-                    margin: 0; 
+                    margin-top: 1mm;
                     padding: 0; 
                     width: 100%;
                     text-align: center; 
