@@ -163,7 +163,7 @@ function CetakBarcodePage() {
                     width: 50mm; 
                     height: 35mm; 
                     box-sizing: border-box; 
-                    padding: 2mm; 
+                    padding: 1.5mm; 
                     margin: 0; 
                     
                     position: absolute;
@@ -201,9 +201,9 @@ function CetakBarcodePage() {
 
                 /* Teks Barcode di Tengah */
                 .barcode-text { 
-                    font-size: 11px; 
+                    font-size: 10px; 
                     font-weight: bold; 
-                    margin-top: 2px; 
+                    margin-top: 1mm; 
                     padding: 0; 
                     width: 100%; 
                     display: block;
