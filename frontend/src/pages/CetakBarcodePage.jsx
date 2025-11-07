@@ -2,9 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import JsBarcode from 'jsbarcode'; 
 
-const itemCategories = ['plastic pertanian', 'plastic kemasan', 'sembako', 'bahan kue'];
+const itemCategories = [
+    'plastic pertanian', 
+    'plastic kemasan', 
+    'sembako', 
+    'bahan kue',
+    'snack',      // <<< Kategori Baru
+    'bumbu'       // <<< Kategori Baru
+];
 
-// --- Komponen Keypad (Diperbesar dan Full-Width) ---
+// --- Komponen Keypad (Tanpa Perubahan) ---
 const Keypad = ({ onNumberClick, onClear }) => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', width: '100%', margin: '10px auto 0' }}>
         {[
@@ -48,12 +55,10 @@ function CetakBarcodePage() {
     const [selectedItem, setSelectedItem] = useState(''); 
     const [beratInput, setBeratInput] = useState(''); 
     
-    // State untuk memicu rendering barcode di area tersembunyi
     const [barcodeResult, setBarcodeResult] = useState(''); 
     const [itemDetail, setItemDetail] = useState(null); 
-    const [beratKg, setBeratKg] = useState(''); // State untuk menyimpan berat dalam format KG
+    const [beratKg, setBeratKg] = useState(''); 
 
-    // Ref untuk elemen SVG di dalam area cetak tersembunyi
     const barcodeRef = useRef(null); 
 
     // --- Efek untuk mengambil data item ---
@@ -86,20 +91,21 @@ function CetakBarcodePage() {
         setBarcodeResult('');
     }, [activeCategory, items]);
     
-    // --- Efek BARCODE RENDERING dan CETAK (Kunci Stabilitas) ---
+    // --- Efek BARCODE RENDERING dan CETAK (EAN-13) ---
     useEffect(() => {
         if (barcodeRef.current && barcodeResult && itemDetail) {
             try {
-                // Ukuran disesuaikan untuk mempermudah scan
-                JsBarcode(barcodeRef.current, barcodeResult, {
-                    format: "CODE128", 
-                    displayValue: false,
+                const ean13String = barcodeResult.substring(0, 13);
+
+                JsBarcode(barcodeRef.current, ean13String, {
+                    format: "EAN13", 
+                    displayValue: true, 
                     margin: 1, 
                     width: 1.2, 
                     height: 35, 
+                    fontSize: 10, 
                 });
 
-                // Tunggu sebentar agar browser selesai menggambar SVG di DOM utama
                 setTimeout(() => {
                     printLabel(); 
                 }, 100); 
@@ -117,10 +123,10 @@ function CetakBarcodePage() {
             const newBerat = String(beratInput) + String(num);
             setBeratInput(newBerat);
             
-            // Konversi ke KG dengan 2 digit desimal
             const beratGram = parseInt(newBerat);
             if (!isNaN(beratGram) && beratGram > 0) {
-                setBeratKg((beratGram / 1000).toFixed(2) + " KG"); 
+                // Konversi: toFixed(3) untuk 3 digit desimal KG
+                setBeratKg((beratGram / 1000).toFixed(3) + " KG"); 
             } else {
                 setBeratKg("");
             }
@@ -135,13 +141,12 @@ function CetakBarcodePage() {
     const handleItemSelect = (item) => {
         setSelectedItem(item._id);
         setItemDetail(item);
-        // FIX BUG: Reset state cetak ketika item baru dipilih
         setBarcodeResult(''); 
         setBeratInput('');    
         setBeratKg('');       
     };
 
-    // --- Fungsi Pencetakan DOM (Perbaikan CSS Pemusatan Paling Stabil) ---
+    // --- Fungsi Pencetakan DOM (CSS Layout Khusus) ---
     const printLabel = () => {
         const printContent = document.getElementById('print-content-wrapper').innerHTML;
         
@@ -158,65 +163,64 @@ function CetakBarcodePage() {
                     color: black;
                 }
                 
-                /* KUNCI STABILITAS: Pemusatan Absolut dan Ukuran Paksa */
+                /* Kontainer Utama Cetak */
                 #print-content-wrapper { 
                     width: 50mm; 
                     height: 35mm; 
                     box-sizing: border-box; 
-                    padding: 2mm 1.5mm 1.5mm 1.5mm; 
-                    margin: 0; 
+                    padding: 1.5mm; 
+                    margin: auto; 
                     
                     position: absolute;
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%); 
                     
-                    text-align: center;
                     font-family: Arial, sans-serif;
-                    
-                    display: flex; 
-                    flex-direction: column; 
-                    justify-content: flex-start;
-                    align-items: center; 
+                    display: block; 
+                    text-align: center;
                 }
 
-                /* Gaya Konten Internal */
-                .item-info { 
-                    font-size: 9px; 
+                /* --- BARIS 1: NAMA ITEM --- */
+                .item-name-header { 
+                    font-size: 10px; 
                     font-weight: bold; 
-                    margin-top: 1mm;
+                    margin: 0 0 1mm 0; 
                     padding: 0; 
+                    text-align: center;
+                    white-space: nowrap; 
+                    overflow: hidden; 
+                    text-overflow: ellipsis; 
                     width: 100%;
-                    text-align: center; 
-                    display: block; /* Memastikan pemusatan block bekerja */
                 }
-                .berat-info {
-                    font-size: 9px;
+                
+                /* --- BARIS 2: KODE BARCODE (SVG) --- */
+                svg { 
+                    width: 40mm !important; 
+                    height: 15mm !important; 
+                    margin: 0 auto; 
+                    display: block; 
+                } 
+                
+                /* --- BARIS 3: KODE ITEM (PLU) --- */
+                .plu-code-line {
+                    font-size: 8px;
+                    font-weight: bold;
+                    margin: 1mm 0 0 0; 
+                    padding: 0;
+                    width: 100%;
+                    text-align: center;
+                }
+
+                /* --- BARIS 4: BERAT --- */
+                .berat-line {
+                    font-size: 12px; /* Diperbesar */
+                    font-weight: bold;
                     margin: 0; 
                     padding: 0;
                     width: 100%;
-                    text-align: center; 
-                    display: block;
+                    text-align: center;
                 }
-
-                /* Teks Barcode di Tengah */
-                .barcode-text { 
-                    font-size: 10px; 
-                    font-weight: bold; 
-                    margin-top: 1mm; 
-                    padding: 0; 
-                    width: 100%; 
-                    display: block;
-                    text-align: center; 
-                }
-                
-                /* Gaya SVG Barcode (Ukuran Tetap untuk Stabilitas) */
-                svg { 
-                    width: 45mm !important; 
-                    height: 15mm !important; 
-                    margin: 1mm auto; 
-                    display: block; 
-                } 
             </style>
         `;
 
@@ -306,7 +310,7 @@ function CetakBarcodePage() {
                     backgroundColor: 'var(--color-card-bg)', 
                     padding: '20px', 
                     borderRadius: '8px', 
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.5)'
+                    boxShadow: '0 3px 15px rgba(0, 0, 0, 0.5)'
                 }}>
                     <label style={{ display: 'block', marginBottom: '15px', color: 'var(--color-primary-blue)', fontWeight: 'bold', fontSize: '1.1em' }}>
                         1. PILIH ITEM (KATEGORI: {activeCategory.toUpperCase()})
@@ -359,7 +363,9 @@ function CetakBarcodePage() {
                     borderRadius: '8px', 
                     boxShadow: '0 4px 15px rgba(0, 0, 0, 0.5)' 
                 }}>
-                    
+                    <label htmlFor="berat-input" style={{ marginBottom: '15px', color: 'var(--color-primary-blue)', fontWeight: 'bold', fontSize: '1.1em' }}>
+                        2. INPUT BERAT & CETAK
+                    </label>
                     <input 
                         id="berat-input"
                         type="text" 
@@ -400,12 +406,25 @@ function CetakBarcodePage() {
             <div id="print-area" style={{ display: 'none' }}>
                 {barcodeResult && itemDetail && (
                     <div id="print-content-wrapper">
-                        <p className="item-info">{itemDetail.nama.toUpperCase()}</p>
+                        {/* BARIS 1: NAMA ITEM */}
+                        <p className="item-name-header">
+                            {itemDetail.nama.toUpperCase()}
+                        </p>
                         
-                        {beratKg && <p className="berat-info">Berat: {beratKg}</p>}
-                        
+                        {/* BARCODE SVG (BARIS 2: KODE BARCODE) */}
                         <svg ref={barcodeRef} style={{ width: '100%' }}></svg> 
-                        <p className="barcode-text">{barcodeResult}</p>
+                        
+                        {/* BARIS 3: KODE ITEM / PLU CODE */}
+                        <p className="plu-code-line">
+                            KODE ITEM: {itemDetail.kode}
+                        </p>
+
+                        {/* BARIS 4: BERAT */}
+                        {beratKg && 
+                            <p className="berat-line">
+                                BERAT (KG): {beratKg}
+                            </p>
+                        }
                     </div>
                 )}
             </div>
