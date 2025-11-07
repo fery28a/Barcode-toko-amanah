@@ -35,7 +35,7 @@ const itemSchema = new mongoose.Schema({
     nama: { type: String, required: true },
     jenis: { 
         type: String, 
-        enum: ['bahan kue', 'sembako', 'plastic pertanian', 'plastic kemasan', 'snack'], 
+        enum: ['bahan kue', 'sembako', 'plastic pertanian', 'plastic kemasan', 'snack','bumbu'], 
         required: true 
     },
     // Kode harus 4 digit dan unik
